@@ -470,7 +470,7 @@
             hideError();
         }
 
-        // URL loading
+        // URL loading with CORS proxy fallback
         loadUrlBtn.addEventListener('click', async () => {
             const url = urlInput.value.trim();
             if (!url) {
@@ -488,12 +488,36 @@
                 loadUrlBtn.textContent = 'Loading...';
                 hideError();
 
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                let blob;
+                let success = false;
+
+                // Try direct fetch first
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        blob = await response.blob();
+                        success = true;
+                    }
+                } catch (e) {
+                    console.log('Direct fetch failed, trying CORS proxy...');
                 }
 
-                const blob = await response.blob();
+                // If direct fetch fails, try with CORS proxy
+                if (!success) {
+                    try {
+                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                        const response = await fetch(proxyUrl);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        blob = await response.blob();
+                        success = true;
+                    } catch (e) {
+                        console.error('CORS proxy failed:', e);
+                        throw new Error('Unable to load video. The server may be blocking access. Try downloading the file and uploading it instead.');
+                    }
+                }
+
                 if (!blob.type.includes('webm') && !url.toLowerCase().endsWith('.webm')) {
                     throw new Error('File is not a WebM video');
                 }
@@ -505,11 +529,7 @@
 
             } catch (error) {
                 console.error('URL loading error:', error);
-                if (error.message.includes('Failed to fetch')) {
-                    showError('Failed to load URL. Make sure it\'s accessible and allows CORS.');
-                } else {
-                    showError(`Failed to load video: ${error.message}`);
-                }
+                showError(error.message || 'Failed to load video from URL');
             } finally {
                 loadUrlBtn.disabled = false;
                 loadUrlBtn.textContent = 'Load from URL';
