@@ -387,8 +387,8 @@
     </div>
 
     <script type="module">
-        import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js';
-        import { toBlobURL } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js';
+        import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+        import { fetchFile } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js';
 
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -561,17 +561,17 @@
                 console.log(message);
             });
 
-            ffmpeg.on('progress', ({ progress, time }) => {
+            ffmpeg.on('progress', ({ progress }) => {
                 const percentage = Math.round(progress * 100);
                 progressFill.style.width = `${percentage}%`;
                 progressText.textContent = `Converting... ${percentage}%`;
             });
 
-            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
             
             await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+                coreURL: `${baseURL}/ffmpeg-core.js`,
+                wasmURL: `${baseURL}/ffmpeg-core.wasm`,
             });
         }
 
@@ -616,7 +616,7 @@
 
             } catch (error) {
                 console.error('Conversion error:', error);
-                showError('Conversion failed. Please try again.');
+                showError('Conversion failed. Please try again or try a smaller video.');
                 progressContainer.classList.remove('active');
             } finally {
                 convertBtn.disabled = false;
